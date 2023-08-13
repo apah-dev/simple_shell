@@ -1,76 +1,44 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <dirent.h>
+#include "shell.h"
 
-#define BUFFER_SIZE 1024
 /**
- * 
-*/
-void execute_command(char *args[]);
+ * main - entry point
+ * @ac: arg count
+ * @av: arg vector
+ *
+ * Return: 0 on success, 1 on error
+ */
+int main(int ac, char **av)
+{
+	info_t info[] = { INFO_INIT };
+	int fd = 2;
 
-int main(void) {
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
+	asm ("mov %1, %0\n\t"
+		"add $3, %0"
+		: "=r" (fd)
+		: "r" (fd));
 
-    while (1) {
-        printf("($) ");
-        fflush(stdout);
-
-        // Read input line
-        read = getline(&line, &len, stdin);
-        if (read == -1) {
-            break;
-        }
-
-        // Remove trailing newline
-        line[strcspn(line, "\n")] = '\0';
-
-        // Tokenize input
-        char *args[BUFFER_SIZE];
-        int arg_count = 0;
-
-        char *token = strtok(line, " ");
-        while (token != NULL) {
-            args[arg_count++] = token;
-            token = strtok(NULL, " ");
-        }
-        args[arg_count] = NULL;
-
-        // Execute command
-        execute_command(args);
-    }
-
-    // Free allocated memory
-    free(line);
-
-    return 0;
-}
-
-
-void execute_command(char *args[]) {
-    pid_t pid, wpid;
-    int status;
-
-    pid = fork();
-    if (pid == 0) {
-        // Child process
-        if (execve(args[0], args, NULL) == -1) {
-            perror("Execution error");
-            exit(EXIT_FAILURE);
-        }
-    } else if (pid < 0) {
-        perror("Fork error");
-    } else {
-        // Parent process
-        do {
-            wpid = waitpid(pid, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    }
+	if (ac == 2)
+	{
+		fd = open(av[1], O_RDONLY);
+		if (fd == -1)
+		{
+			if (errno == EACCES)
+				exit(126);
+			if (errno == ENOENT)
+			{
+				_eputs(av[0]);
+				_eputs(": 0: Can't open ");
+				_eputs(av[1]);
+				_eputchar('\n');
+				_eputchar(BUF_FLUSH);
+				exit(127);
+			}
+			return (EXIT_FAILURE);
+		}
+		info->readfd = fd;
+	}
+	populate_env_list(info);
+	read_history(info);
+	hsh(info, av);
+	return (EXIT_SUCCESS);
 }
