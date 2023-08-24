@@ -1,14 +1,14 @@
 #include "shell.h"
 
 /**
- * _myhist - this displays the history list with one command by line.
- * 		Starting at 0 then precede with line numbers.
- * @info: This structure containing potential arguments.
- * 	 This is to maintain constant function prototype.
- *  Return: 0
+ * _myhistory - displays the history list, one command by line, preceded
+ *              with line numbers, starting at 0.
+ * @info: Structure containing potential arguments. Used to maintain
+ *        constant function prototype.
+ *  Return: Always 0
  */
 
-int _myhist(info_t *info)
+int _myhistory(info_t *info)
 {
 	print_list(info->history);
 	return (0);
